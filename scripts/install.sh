@@ -17,6 +17,11 @@ set -euo pipefail
 REPO="${DSH_DESKTOP_REPO:-yuhaohub/dsh-desktop}"
 VERSION="${DSH_DESKTOP_VERSION:-}"
 DEST="${DSH_DESKTOP_DEST:-/Applications}"
+# 显式初始化，避免个别 shell 在命令替换失败时把变量留成未设置状态
+LATEST_URL=""
+ZIP_NAME=""
+ZIP_URL=""
+SUM_URL=""
 
 say() { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33mWarn:\033[0m %s\n' "$*" >&2; }
@@ -38,9 +43,11 @@ command -v unzip >/dev/null 2>&1 || die "未找到 unzip。"
 if [ -z "$VERSION" ]; then
   say "查询 $REPO 的最新版本…"
   LATEST_URL="$(curl -fsSL -o /dev/null -w '%{url_effective}' -L --max-time 20 "https://github.com/$REPO/releases/latest" 2>/dev/null || true)"
-  VERSION="$(printf '%s' "$LATEST_URL" | sed -n 's|.*/tag/\([^/]*\)$|\1|p' || true)"
-  [ -n "$VERSION" ] || die "无法确定最新版本（请检查网络、或仓库/Release 是否存在）。"
+  VERSION="$(printf '%s' "${LATEST_URL:-}" | sed -n 's|.*/tag/\([^/]*\)$|\1|p' || true)"
+  [ -n "${VERSION:-}" ] || die "无法确定最新版本（请检查网络、或仓库/Release 是否存在）。"
 fi
+# 双保险：确保从这里开始 VERSION 一定是已赋值状态
+VERSION="${VERSION:-}"
 say "发现版本: $VERSION（架构: $ARCH）"
 
 # --- 构造安装包地址 --------------------------------------------------------
