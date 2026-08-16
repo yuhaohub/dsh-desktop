@@ -68,15 +68,6 @@ npm run dist:x64     # 只打 x64
 
 产物在 `dist/`，例如 `DeepSeek Harness Desktop-0.1.0-arm64.dmg` / `-arm64.zip`。注意：图标（`assets/icon.png`、`assets/trayTemplate*.png`）是构建时用 Electron 从 `assets/dsh-icon.svg` 栅格化生成的，不提交仓库，`npm start` / `npm run dist` 会自动生成。
 
-## 发布新版本
-
-打 tag 即可，CI 会自动构建 arm64 + x64 的 dmg/zip、生成校验和并发布到 GitHub Releases：
-
-```sh
-git tag v0.1.0
-git push origin v0.1.0
-```
-
 ## 卸载
 
 ```sh
