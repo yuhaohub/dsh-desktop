@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/yuhaohub/dsh-desktop?sort=semver)](https://github.com/yuhaohub/dsh-desktop/releases)
-[![Platform](https://img.shields.io/badge/platform-macOS-arm64%20%7C%20x64-lightgrey.svg)](#)
+[![Platform](https://img.shields.io/badge/platform-macOS_arm64_%7C_x64-lightgrey.svg)](#)
 [![CI](https://github.com/yuhaohub/dsh-desktop/actions/workflows/ci.yml/badge.svg)](https://github.com/yuhaohub/dsh-desktop/actions/workflows/ci.yml)
 
 DeepSeek Harness 的桌面壳（Electron）：自动拉起（或挂接已运行的）`dsh web`，把 Web 界面放进独立窗口，带托盘图标，关窗最小化到托盘。**双击即可使用，无需手动起服务。**
