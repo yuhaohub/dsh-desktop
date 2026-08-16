@@ -37,7 +37,7 @@ if [ -z "$VERSION" ]; then
   say "查询 $REPO 的最新版本…"
   RELEASE_JSON="$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest")" \
     || die "无法获取最新版本（请检查网络或仓库是否存在）。"
-  VERSION="$(printf '%s' "$RELEASE_JSON" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
+  VERSION="$(printf '%s' "$RELEASE_JSON" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1 || true)"
   [ -n "$VERSION" ] || die "无法从 GitHub 解析最新版本号。"
 else
   RELEASE_JSON="$(curl -fsSL "https://api.github.com/repos/$REPO/releases/tags/$VERSION")" \
@@ -48,7 +48,7 @@ say "发现版本: $VERSION（架构: $ARCH）"
 # --- 挑选安装包 ------------------------------------------------------------
 ZIP_URL="$(printf '%s' "$RELEASE_JSON" | grep -o '"browser_download_url"[[:space:]]*:[[:space:]]*"[^"]*"' \
   | sed -E 's/.*"[[:space:]]*:[[:space:]]*"([^"]*)"/\1/' \
-  | grep -E "\-${ARCH}\.zip$" | head -n1)"
+  | grep -E "\-${ARCH}\.zip$" | head -n1 || true)"
 [ -n "$ZIP_URL" ] || die "该版本未找到 ${ARCH} 架构的 zip 安装包，请确认发布资产完整。"
 
 ZIP_NAME="$(basename "$ZIP_URL")"
