@@ -17,9 +17,9 @@
   "scripts": {
     "icon": "node scripts/make-icon.mjs",
     "start": "node scripts/make-icon.mjs && electron .",
-    "dist": "node scripts/make-icon.mjs && electron-builder",
-    "dist:arm64": "node scripts/make-icon.mjs && electron-builder --arm64",
-    "dist:x64": "node scripts/make-icon.mjs && electron-builder --x64"
+    "dist": "node scripts/make-icon.mjs && electron-builder --publish never",
+    "dist:arm64": "node scripts/make-icon.mjs && electron-builder --arm64 --publish never",
+    "dist:x64": "node scripts/make-icon.mjs && electron-builder --x64 --publish never"
   },
   "devDependencies": {
     "electron": "^33.0.0",
