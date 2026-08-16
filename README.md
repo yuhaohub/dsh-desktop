@@ -28,6 +28,18 @@ curl -fsSL https://raw.githubusercontent.com/yuhaohub/dsh-desktop/main/scripts/i
 - 双击 .app 启动也有效：会扫描 nvm / Homebrew / 全局 npm 的 node 和 `~/.npm/_npx` 缓存里的 dsh（不依赖 shell PATH）；
 - 关窗口 = 隐藏到托盘；托盘菜单「退出」或 `Cmd+Q` 才真正退出（会顺带停掉**自己拉起的** dsh 进程；外部实例不受影响）。
 
+## 更新升级
+
+**应用内自动检查（轻量版）**：每次启动 3 秒后自动对比 GitHub 最新 Release 与本机版本，发现新版会弹窗提示，点「下载并安装」即可一键下载（含 SHA-256 校验）→ 替换 → 自动重启。无需签名也能用。想关闭检查：设置环境变量 `DSH_DESKTOP_NO_UPDATE_CHECK=1` 再启动。
+
+手动升级（等价于重装）：
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/yuhaohub/dsh-desktop/main/scripts/install.sh | sh
+```
+
+**dsh 本体的升级**：桌面壳不捆绑 dsh——全新机器首次启动会通过 npx 自动拉取官方最新版 dsh（Web 界面同步最新）。若本机已有旧缓存想强制刷新：`npx -y @deepseek-ai/dsh@latest`。
+
 ## 配置（环境变量）
 
 | 变量 | 默认 | 说明 |
@@ -35,6 +47,7 @@ curl -fsSL https://raw.githubusercontent.com/yuhaohub/dsh-desktop/main/scripts/i
 | `DSH_URL` | `http://127.0.0.1:3080` | Web 应用地址（自动拉起的 dsh 会用其端口） |
 | `DSH_BIN` | `~/.npm/_npx/*/.../dsh/lib/bin.js`（最新） | dsh CLI 入口（绝对路径） |
 | `DSH_NODE` | `which node` → nvm → Homebrew → Electron 内置 | 跑 dsh 用的 node 二进制 |
+| `DSH_DESKTOP_NO_UPDATE_CHECK` | 未设置 | 设为 `1` 可关闭启动时的自动更新检查 |
 
 ## 日志
 
@@ -75,8 +88,9 @@ rm -rf "/Applications/DeepSeek Harness Desktop.app"
 ## 路线图
 
 - [x] macOS（arm64 / x64）
+- [x] 应用内轻量更新检查（启动检测新版 → 一键下载替换）
+- [ ] electron-updater 全自动静默升级（需要开发者签名/公证后）
 - [ ] Windows / Linux
-- [ ] 应用内自动更新（electron-updater）
 
 ## 协议与致谢
 

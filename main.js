@@ -20,9 +20,12 @@
  */
 const { app, BrowserWindow, Tray, Menu, dialog, nativeImage, shell } = require('electron');
 const { spawn } = require('node:child_process');
+const { createHash } = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
+const { Readable } = require('node:stream');
 const { findNode, findDshBin, buildDshSpawn } = require('./scripts/locate.js');
+const { GITHUB_REPO, compareVersions, latestReleaseUrl, findArchAsset } = require('./scripts/update-check.js');
 
 const DSH_URL = process.env.DSH_URL || 'http://127.0.0.1:3080';
 
@@ -123,8 +126,10 @@ async function ensureServer(setStatus = () => {}) {
   return ok;
 }
 
-/** Small frameless splash window shown while dsh boots (better first-run UX). */
-function createSplash() {
+/** Small frameless status window (boot splash / update progress). */
+function createStatusWindow({ title, status = '…' } = {}) {
+  const esc = (s) =>
+    String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   let iconDataUrl = '';
   try {
     const iconPath = path.join(__dirname, 'assets', 'icon.png');
@@ -138,7 +143,7 @@ function createSplash() {
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
   .logo { width: 88px; height: 88px; border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,.45); }
-  .title { font-size: 17px; font-weight: 600; }
+  .title { font-size: 17px; font-weight: 600; text-align: center; padding: 0 24px; }
   .status { font-size: 12.5px; opacity: .62; text-align: center; padding: 0 28px;
     line-height: 1.6; white-space: pre-line; }
   .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.18);
@@ -146,8 +151,8 @@ function createSplash() {
   @keyframes spin { to { transform: rotate(360deg); } }
 </style></head><body>
   ${iconDataUrl ? `<img class="logo" src="${iconDataUrl}">` : '<div class="spinner"></div>'}
-  <div class="title">DeepSeek Harness</div>
-  <div class="status" id="status">正在启动…</div>
+  <div class="title">${esc(title)}</div>
+  <div class="status" id="status">${esc(status)}</div>
   <div class="spinner"></div>
 </body></html>`;
   const win = new BrowserWindow({
@@ -247,11 +252,145 @@ function quit() {
   app.quit();
 }
 
+// --- lightweight in-app update check -------------------------------------
+
+async function fetchJson(url) {
+  const res = await fetch(url, {
+    signal: AbortSignal.timeout(10000),
+    headers: { 'User-Agent': 'dsh-desktop' },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function downloadToFile(url, dest) {
+  const res = await fetch(url, { signal: AbortSignal.timeout(180000) });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const ws = fs.createWriteStream(dest);
+  await new Promise((resolve, reject) => {
+    Readable.fromWeb(res.body)
+      .pipe(ws)
+      .on('finish', resolve)
+      .on('error', reject);
+  });
+}
+
+function sha256File(filePath) {
+  return new Promise((resolve, reject) => {
+    const hash = createHash('sha256');
+    fs.createReadStream(filePath)
+      .on('data', (d) => hash.update(d))
+      .on('end', () => resolve(hash.digest('hex')))
+      .on('error', reject);
+  });
+}
+
+/** The installed .app bundle (three dirname hops up from the executable). */
+function currentAppBundlePath() {
+  if (!app.isPackaged) return null;
+  const exe = app.getPath('exe');
+  return path.dirname(path.dirname(path.dirname(exe)));
+}
+
+/** Download + verify the new zip, then hand the swap off to a detached helper. */
+async function performUpdate(release) {
+  const asset = findArchAsset(release, process.arch);
+  if (!asset) {
+    dialog.showErrorBox(
+      'DeepSeek Harness Desktop',
+      `该版本没有 ${process.arch} 架构的安装包，请到 Releases 页面手动下载。`,
+    );
+    return;
+  }
+  const bundle = currentAppBundlePath();
+  if (!bundle) return;
+  try {
+    fs.accessSync(path.dirname(bundle), fs.constants.W_OK);
+  } catch {
+    dialog.showErrorBox(
+      'DeepSeek Harness Desktop',
+      `没有权限更新 ${path.dirname(bundle)}。\n请改用一键安装命令升级，或把应用移到「应用程序」后重试。`,
+    );
+    return;
+  }
+
+  const tmpRoot = path.join(app.getPath('temp'), 'dsh-desktop-update');
+  fs.mkdirSync(tmpRoot, { recursive: true });
+  const zipPath = path.join(tmpRoot, asset.name);
+  const extractDir = path.join(tmpRoot, 'extracted');
+  const progress = createStatusWindow({ title: `正在下载新版本 ${release.tag_name}…` });
+
+  try {
+    await downloadToFile(asset.url, zipPath);
+    progress.setStatus('校验下载文件…');
+    const sumUrl = asset.url.slice(0, asset.url.lastIndexOf('/')) + '/SHA256SUMS';
+    try {
+      const sums = await (await fetch(sumUrl, { signal: AbortSignal.timeout(10000) })).text();
+      const line = sums.split('\n').find((l) => l.trimEnd().endsWith('  ' + asset.name));
+      if (line) {
+        const expected = line.trim().split(/\s+/)[0];
+        const actual = await sha256File(zipPath);
+        if (expected !== actual) throw new Error('校验和不匹配，更新已取消（下载文件可能损坏）');
+      }
+    } catch (e) {
+      if (e.message.startsWith('校验和不匹配')) throw e;
+      log(`update: checksum unavailable, skipping (${e.message})`);
+    }
+    progress.setStatus('正在安装…');
+    const helper = path.join(__dirname, 'scripts', 'apply-update.js');
+    const child = spawn(process.execPath, [helper, zipPath, extractDir, bundle, String(process.pid)], {
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      detached: true,
+      stdio: 'ignore',
+    });
+    child.unref();
+    log('update: helper spawned, quitting to apply');
+    progress.destroy();
+    quit(); // stops our spawned dsh (if any) and exits; the helper waits for this pid
+  } catch (e) {
+    log(`update failed: ${e.message}`);
+    progress.destroy();
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+    dialog.showErrorBox('DeepSeek Harness Desktop', `更新失败：${e.message}`);
+  }
+}
+
+/** Check GitHub for a newer release; prompt + one-click install when found. */
+async function checkForUpdates() {
+  const data = await fetchJson(latestReleaseUrl(GITHUB_REPO));
+  const latest = String(data.tag_name || '');
+  const current = app.getVersion();
+  if (compareVersions(latest, current) <= 0) {
+    log(`update check: up to date (v${current})`);
+    return;
+  }
+  log(`update available: v${current} -> v${latest}`);
+  const { response } = await dialog.showMessageBox({
+    type: 'info',
+    title: 'DeepSeek Harness Desktop',
+    message: `发现新版本 v${latest}`,
+    detail: `当前版本 v${current}。\n更新将下载并替换应用，完成后自动重启。`,
+    buttons: ['下载并安装', '查看更新内容', '稍后'],
+    defaultId: 0,
+    cancelId: 2,
+    noLink: true,
+  });
+  if (response === 0) await performUpdate(data);
+  else if (response === 1) shell.openExternal(data.html_url);
+}
+
+function scheduleUpdateCheck() {
+  if (!app.isPackaged) return; // dev mode: never auto-update
+  if (process.env.DSH_DESKTOP_NO_UPDATE_CHECK === '1') return;
+  // Give the app a moment to boot before hitting the network.
+  setTimeout(() => checkForUpdates().catch((e) => log(`update check failed: ${e.message}`)), 3000);
+}
+
 app.whenReady().then(async () => {
   if (process.platform === 'darwin') {
     app.dock.setIcon(path.join(__dirname, 'assets', 'icon.png'));
   }
-  splash = createSplash();
+  splash = createStatusWindow({ title: 'DeepSeek Harness', status: '正在启动…' });
   splash.setStatus('正在定位 dsh…');
   const ok = await ensureServer((text) => splash?.setStatus(text));
   splash.destroy();
@@ -262,6 +401,7 @@ app.whenReady().then(async () => {
   }
   createWindow();
   createTray();
+  scheduleUpdateCheck();
   app.on('activate', showWindow); // macOS dock click
 });
 

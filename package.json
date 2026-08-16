@@ -31,6 +31,8 @@
     "files": [
       "main.js",
       "scripts/locate.js",
+      "scripts/update-check.js",
+      "scripts/apply-update.js",
       "assets/**"
     ],
     "directories": {

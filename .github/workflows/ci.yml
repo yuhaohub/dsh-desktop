@@ -25,6 +25,8 @@ jobs:
         run: |
           node --check main.js
           node --check scripts/locate.js
+          node --check scripts/update-check.js
+          node --check scripts/apply-update.js
           bash -n scripts/install.sh
 
       - name: Generate icons

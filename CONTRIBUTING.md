@@ -19,9 +19,10 @@ npm start          # 生成图标并启动应用
 ## 提交前检查
 
 ```sh
-node --check main.js && node --check scripts/locate.js   # 语法
-bash -n scripts/install.sh                               # 安装脚本语法
-npm run dist                                             # 确认能完整打包
+node --check main.js && node --check scripts/locate.js                # 语法
+node --check scripts/update-check.js && node --check scripts/apply-update.js
+bash -n scripts/install.sh                                            # 安装脚本语法
+npm run dist                                                          # 确认能完整打包
 ```
 
 - 不要提交 `dist/`、`node_modules/`、`assets/*.png`（构建产物，见 `.gitignore`）。
