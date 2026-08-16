@@ -1,0 +1,14 @@
+# 依赖与构建产物
+node_modules/
+dist/
+
+# 图标为构建时生成（`npm run icon` 会重新生成），只提交 SVG 源文件
+assets/*.png
+
+# macOS 系统文件
+.DS_Store
+
+# 日志与本地环境变量
+*.log
+.env
+.env.local

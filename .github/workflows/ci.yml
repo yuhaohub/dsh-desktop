@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    name: Build check (macOS)
+    runs-on: macos-14
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Syntax checks
+        run: |
+          node --check main.js
+          node --check scripts/locate.js
+          bash -n scripts/install.sh
+
+      - name: Generate icons
+        run: npm run icon
+
+      # 快速验证能否完整打包（unpacked .app）
+      - run: npx electron-builder --dir
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dsh-desktop-app
+          path: dist/mac*/DeepSeek Harness Desktop.app
+          if-no-files-found: error
