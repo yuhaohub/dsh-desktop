@@ -33,26 +33,22 @@ command -v curl >/dev/null 2>&1 || die "未找到 curl。"
 command -v unzip >/dev/null 2>&1 || die "未找到 unzip。"
 
 # --- 解析发布版本 ----------------------------------------------------------
+# 用 https://github.com/<repo>/releases/latest 的 302 跳转拿到最新 tag，
+# 不走 GitHub API（未认证有 60 次/小时/IP 限流，装机会被限流挡住）。
 if [ -z "$VERSION" ]; then
   say "查询 $REPO 的最新版本…"
-  RELEASE_JSON="$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest")" \
-    || die "无法获取最新版本（请检查网络或仓库是否存在）。"
-  VERSION="$(printf '%s' "$RELEASE_JSON" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1 || true)"
-  [ -n "$VERSION" ] || die "无法从 GitHub 解析最新版本号。"
-else
-  RELEASE_JSON="$(curl -fsSL "https://api.github.com/repos/$REPO/releases/tags/$VERSION")" \
-    || die "无法获取版本 $VERSION（请检查版本号是否正确）。"
+  LATEST_URL="$(curl -fsSL -o /dev/null -w '%{url_effective}' -L --max-time 20 "https://github.com/$REPO/releases/latest" 2>/dev/null || true)"
+  VERSION="$(printf '%s' "$LATEST_URL" | sed -n 's|.*/tag/\([^/]*\)$|\1|p' || true)"
+  [ -n "$VERSION" ] || die "无法确定最新版本（请检查网络、或仓库/Release 是否存在）。"
 fi
 say "发现版本: $VERSION（架构: $ARCH）"
 
-# --- 挑选安装包 ------------------------------------------------------------
-ZIP_URL="$(printf '%s' "$RELEASE_JSON" | grep -o '"browser_download_url"[[:space:]]*:[[:space:]]*"[^"]*"' \
-  | sed -E 's/.*"[[:space:]]*:[[:space:]]*"([^"]*)"/\1/' \
-  | grep -E "\-${ARCH}\.zip$" | head -n1 || true)"
-[ -n "$ZIP_URL" ] || die "该版本未找到 ${ARCH} 架构的 zip 安装包，请确认发布资产完整。"
-
-ZIP_NAME="$(basename "$ZIP_URL")"
-SUM_URL="$(dirname "$ZIP_URL")/SHA256SUMS"
+# --- 构造安装包地址 --------------------------------------------------------
+# 产物命名由 electron-builder 固定为 dsh-desktop-<version>-<arch>.zip，
+# 与 Release 上的资产名、SHA256SUMS 里的文件名完全一致。
+ZIP_NAME="dsh-desktop-${VERSION#v}-${ARCH}.zip"
+ZIP_URL="https://github.com/$REPO/releases/download/$VERSION/$ZIP_NAME"
+SUM_URL="https://github.com/$REPO/releases/download/$VERSION/SHA256SUMS"
 
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
