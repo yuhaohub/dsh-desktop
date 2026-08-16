@@ -31,6 +31,11 @@ jobs:
       # 解析成数组导致发布被意外触发。
       - run: npm run dist -- --arm64 --x64
 
+      # install.sh 也作为 Release 资产发布，安装命令可走
+      # releases/latest/download/install.sh，不受 raw CDN 缓存影响
+      - name: Stage installer as release asset
+        run: cp scripts/install.sh dist/install.sh
+
       - name: Generate checksums
         run: |
           cd dist
@@ -43,6 +48,7 @@ jobs:
             dist/*.dmg
             dist/*.zip
             dist/SHA256SUMS
+            dist/install.sh
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

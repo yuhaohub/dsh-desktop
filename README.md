@@ -10,7 +10,7 @@ DeepSeek Harness 的桌面壳（Electron）：自动拉起（或挂接已运行�
 ## 一键安装（macOS）
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/yuhaohub/dsh-desktop/main/scripts/install.sh | sh
+curl -fsSL https://github.com/yuhaohub/dsh-desktop/releases/latest/download/install.sh | sh
 ```
 
 脚本会从 [GitHub Releases](https://github.com/yuhaohub/dsh-desktop/releases) 下载最新版、校验 SHA-256、自动安装到 `/Applications`（不可写时退回 `~/Applications`）。装完去「应用程序」双击 **DeepSeek Harness Desktop** 即可。
@@ -35,7 +35,7 @@ curl -fsSL https://raw.githubusercontent.com/yuhaohub/dsh-desktop/main/scripts/i
 手动升级（等价于重装）：
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/yuhaohub/dsh-desktop/main/scripts/install.sh | sh
+curl -fsSL https://github.com/yuhaohub/dsh-desktop/releases/latest/download/install.sh | sh
 ```
 
 **dsh 本体的升级**：桌面壳不捆绑 dsh——全新机器首次启动会通过 npx 自动拉取官方最新版 dsh（Web 界面同步最新）。若本机已有旧缓存想强制刷新：`npx -y @deepseek-ai/dsh@latest`。
