@@ -38,7 +38,7 @@
     "directories": {
       "output": "dist"
     },
-    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "artifactName": "${name}-${version}-${arch}.${ext}",
     "mac": {
       "category": "public.app-category.developer-tools",
       "target": [

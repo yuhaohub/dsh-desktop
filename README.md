@@ -66,7 +66,7 @@ npm run dist:arm64   # 只打 arm64
 npm run dist:x64     # 只打 x64
 ```
 
-产物在 `dist/`，例如 `DeepSeek Harness Desktop-0.1.0-arm64.dmg` / `-arm64.zip`。注意：图标（`assets/icon.png`、`assets/trayTemplate*.png`）是构建时用 Electron 从 `assets/dsh-icon.svg` 栅格化生成的，不提交仓库，`npm start` / `npm run dist` 会自动生成。
+产物在 `dist/`，例如 `dsh-desktop-0.1.0-arm64.dmg` / `dsh-desktop-0.1.0-arm64.zip`（x64 对应 `-x64`）。注意：图标（`assets/icon.png`、`assets/trayTemplate*.png`）是构建时用 Electron 从 `assets/dsh-icon.svg` 栅格化生成的，不提交仓库，`npm start` / `npm run dist` 会自动生成。
 
 ## 卸载
 
