@@ -373,11 +373,11 @@ async function checkForUpdates() {
     log(`update check: up to date (v${current})`);
     return;
   }
-  log(`update available: v${current} -> v${latest}`);
+  log(`update available: v${current} -> ${latest}`);
   const { response } = await dialog.showMessageBox({
     type: 'info',
     title: 'DeepSeek Harness Desktop',
-    message: `发现新版本 v${latest}`,
+    message: `发现新版本 ${latest}`,
     detail: `当前版本 v${current}。\n更新将下载并替换应用，完成后自动重启。`,
     buttons: ['下载并安装', '查看更新内容', '稍后'],
     defaultId: 0,
