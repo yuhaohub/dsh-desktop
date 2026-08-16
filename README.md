@@ -19,7 +19,10 @@ curl -fsSL https://github.com/yuhaohub/dsh-desktop/releases/latest/download/inst
 
 **首次启动**：应用会自动查找本机的 `dsh`（npx 缓存或全局安装）；找不到时会通过 `npx` 联网拉取 `@deepseek-ai/dsh`，所以第一次启动需要联网并已安装 [Node.js](https://nodejs.org)，之后启动即秒开。若你已经在终端里跑着 `dsh web`，应用会直接挂接它，不会重复起进程。
 
-> 若 macOS 提示「无法打开，因为无法验证开发者」（未签名应用），右键（或按住 Control 点击）图标 → **打开** 一次即可。
+> 若 macOS 提示「无法打开，因为无法验证开发者」或「已损坏，无法打开」（未签名应用 + 下载 quarantine 标记），任选其一：
+> - 右键（或按住 Control 点击）图标 → **打开** 一次；
+> - 或终端执行 `xattr -dr com.apple.quarantine "/Applications/DeepSeek Harness Desktop.app"`；
+> - 用上面的一键安装脚本安装则**不会**遇到此问题（脚本会自动移除 quarantine）。
 
 ## 工作原理
 

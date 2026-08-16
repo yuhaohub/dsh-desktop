@@ -101,6 +101,9 @@ if ! mkdir -p "$DEST" 2>/dev/null || [ ! -w "$DEST" ]; then
 fi
 ditto "$APP_DIR" "$TARGET"
 
+# 未签名应用：移除 quarantine 标记，避免 Gatekeeper 报「已损坏」而无法打开
+xattr -dr com.apple.quarantine "$TARGET" 2>/dev/null || true
+
 say "安装完成：$TARGET"
 say ""
 printf '  双击启动：%s\n' "$TARGET"
