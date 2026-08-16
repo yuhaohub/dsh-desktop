@@ -32,8 +32,8 @@ jobs:
       - name: Generate icons
         run: npm run icon
 
-      # 快速验证能否完整打包（unpacked .app）
-      - run: npx electron-builder --dir
+      # 快速验证能否完整打包（unpacked .app）；-p never 防止意外发布
+      - run: npx electron-builder --dir -p never
 
       - uses: actions/upload-artifact@v4
         with:

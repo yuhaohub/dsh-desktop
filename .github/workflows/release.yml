@@ -25,9 +25,11 @@ jobs:
 
       - run: npm ci
 
-      # 生成图标并打包两个架构（zip + dmg）。--publish never：只构建，
-      # 发布统一由下方 softprops 步骤用 GITHUB_TOKEN 完成。
-      - run: npm run dist -- --arm64 --x64 --publish never
+      # 生成图标并打包两个架构（zip + dmg）。package.json 的 dist 脚本已含
+      # --publish never（只构建），发布统一由下方 softprops 步骤用
+      # GITHUB_TOKEN 完成。注意：不要再追加 --publish，重复参数会被 yargs
+      # 解析成数组导致发布被意外触发。
+      - run: npm run dist -- --arm64 --x64
 
       - name: Generate checksums
         run: |
