@@ -239,8 +239,12 @@ function createTray() {
   tray.on('click', showWindow);
 }
 
-function quit() {
-  quitting = true;
+let stopRequested = false;
+
+/** Stop the dsh web process WE spawned (externally attached instances are never touched). */
+function stopSpawnedDsh() {
+  if (stopRequested) return; // idempotent across quit paths
+  stopRequested = true;
   if (dshChild && dshChild.exitCode === null) {
     log('stopping spawned dsh web');
     dshChild.kill('SIGTERM');
@@ -249,6 +253,11 @@ function quit() {
       if (dshChild && dshChild.exitCode === null) dshChild.kill('SIGKILL');
     }, 5000).unref();
   }
+}
+
+function quit() {
+  quitting = true;
+  stopSpawnedDsh();
   app.quit();
 }
 
@@ -410,4 +419,5 @@ app.on('window-all-closed', () => {});
 
 app.on('before-quit', () => {
   quitting = true;
+  stopSpawnedDsh(); // Cmd+Q / system shutdown: also stop the dsh we spawned
 });
